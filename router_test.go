@@ -789,7 +789,9 @@ func TestRouterLookup(t *testing.T) {
 	if handle == nil {
 		t.Fatal("Got no handle!")
 	} else {
-		handle(nil)
+		for _, handler := range handle {
+			handler(nil)
+		}
 		if !routed {
 			t.Fatal("Routing failed!")
 		}

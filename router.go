@@ -149,39 +149,41 @@ func New() *Router {
 	}
 }
 
+type handlers []fasthttp.RequestHandler
+
 // GET is a shortcut for router.Handle("GET", path, handle)
-func (r *Router) GET(path string, handle fasthttp.RequestHandler) {
-	r.Handle("GET", path, handle)
+func (r *Router) GET(path string, handle ...fasthttp.RequestHandler) {
+	r.Handle("GET", path, handle...)
 }
 
 // HEAD is a shortcut for router.Handle("HEAD", path, handle)
-func (r *Router) HEAD(path string, handle fasthttp.RequestHandler) {
-	r.Handle("HEAD", path, handle)
+func (r *Router) HEAD(path string, handle ...fasthttp.RequestHandler) {
+	r.Handle("HEAD", path, handle...)
 }
 
 // OPTIONS is a shortcut for router.Handle("OPTIONS", path, handle)
-func (r *Router) OPTIONS(path string, handle fasthttp.RequestHandler) {
-	r.Handle("OPTIONS", path, handle)
+func (r *Router) OPTIONS(path string, handle ...fasthttp.RequestHandler) {
+	r.Handle("OPTIONS", path, handle...)
 }
 
 // POST is a shortcut for router.Handle("POST", path, handle)
-func (r *Router) POST(path string, handle fasthttp.RequestHandler) {
-	r.Handle("POST", path, handle)
+func (r *Router) POST(path string, handle ...fasthttp.RequestHandler) {
+	r.Handle("POST", path, handle...)
 }
 
 // PUT is a shortcut for router.Handle("PUT", path, handle)
-func (r *Router) PUT(path string, handle fasthttp.RequestHandler) {
-	r.Handle("PUT", path, handle)
+func (r *Router) PUT(path string, handle ...fasthttp.RequestHandler) {
+	r.Handle("PUT", path, handle...)
 }
 
 // PATCH is a shortcut for router.Handle("PATCH", path, handle)
-func (r *Router) PATCH(path string, handle fasthttp.RequestHandler) {
-	r.Handle("PATCH", path, handle)
+func (r *Router) PATCH(path string, handle ...fasthttp.RequestHandler) {
+	r.Handle("PATCH", path, handle...)
 }
 
 // DELETE is a shortcut for router.Handle("DELETE", path, handle)
-func (r *Router) DELETE(path string, handle fasthttp.RequestHandler) {
-	r.Handle("DELETE", path, handle)
+func (r *Router) DELETE(path string, handle ...fasthttp.RequestHandler) {
+	r.Handle("DELETE", path, handle...)
 }
 
 // Handle registers a new request handle with the given path and method.
@@ -192,7 +194,7 @@ func (r *Router) DELETE(path string, handle fasthttp.RequestHandler) {
 // This function is intended for bulk loading and to allow the usage of less
 // frequently used, non-standardized or custom methods (e.g. for internal
 // communication with a proxy).
-func (r *Router) Handle(method, path string, handle fasthttp.RequestHandler) {
+func (r *Router) Handle(method, path string, handle ...fasthttp.RequestHandler) {
 	if path[0] != '/' {
 		panic("path must begin with '/' in path '" + path + "'")
 	}
@@ -207,7 +209,7 @@ func (r *Router) Handle(method, path string, handle fasthttp.RequestHandler) {
 		r.trees[method] = root
 	}
 
-	root.addRoute(path, handle)
+	root.addRoute(path, handle...)
 }
 
 // ServeFiles serves files from the given file system root.
@@ -217,7 +219,8 @@ func (r *Router) Handle(method, path string, handle fasthttp.RequestHandler) {
 // "/etc/passwd" would be served.
 // Internally a http.FileServer is used, therefore http.NotFound is used instead
 // of the Router's NotFound handler.
-//     router.ServeFiles("/src/*filepath", "/var/www")
+//
+//	router.ServeFiles("/src/*filepath", "/var/www")
 func (r *Router) ServeFiles(path string, rootPath string) {
 	if len(path) < 10 || path[len(path)-10:] != "/*filepath" {
 		panic("path must end with /*filepath in path '" + path + "'")
@@ -242,7 +245,7 @@ func (r *Router) recv(ctx *fasthttp.RequestCtx) {
 // If the path was found, it returns the handle function and the path parameter
 // values. Otherwise the third return value indicates whether a redirection to
 // the same path with an extra / without the trailing slash should be performed.
-func (r *Router) Lookup(method, path string, ctx *fasthttp.RequestCtx) (fasthttp.RequestHandler, bool) {
+func (r *Router) Lookup(method, path string, ctx *fasthttp.RequestCtx) (handlers, bool) {
 	if root := r.trees[method]; root != nil {
 		return root.getValue(path, ctx)
 	}
@@ -297,7 +300,10 @@ func (r *Router) Handler(ctx *fasthttp.RequestCtx) {
 	method := string(ctx.Method())
 	if root := r.trees[method]; root != nil {
 		if f, tsr := root.getValue(path, ctx); f != nil {
-			f(ctx)
+			//f(ctx)
+			for _, handler := range f {
+				handler(ctx)
+			}
 			return
 		} else if method != "CONNECT" && path != "/" {
 			code := 301 // Permanent redirect, request with GET method
@@ -314,11 +320,11 @@ func (r *Router) Handler(ctx *fasthttp.RequestCtx) {
 				} else {
 					uri = path + "/"
 				}
-				
+
 				if len(ctx.URI().QueryString()) > 0 {
 					uri += "?" + string(ctx.QueryArgs().QueryString())
 				}
-				
+
 				ctx.Redirect(uri, code)
 				return
 			}
