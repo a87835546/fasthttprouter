@@ -5,12 +5,14 @@ import (
 	"net/http"
 	"path"
 	"regexp"
+	"sync"
 )
 
 type RouterGroup struct {
-	Router   *Router
-	Handlers []fasthttp.RequestHandler
+	Router *Router
+	//Handlers []fasthttp.RequestHandler
 	basePath string
+	mp       sync.Map
 }
 
 //	func (group *RouterGroupMap) Use(middleware ...fasthttp.RequestHandler) {
@@ -20,12 +22,16 @@ type RouterGroup struct {
 //		group.mp.Store(group.basePath, rs)
 //	}
 func (group *RouterGroup) Use(middleware ...fasthttp.RequestHandler) IRoutes {
-	group.Handlers = append(group.Handlers, middleware...)
+	//group.Handlers = append(group.Handlers, middleware...)
+	res, _ := group.mp.Load(group.basePath)
+	list := res.([]fasthttp.RequestHandler)
+	res = append(list, middleware...)
+	group.mp.Store(group.basePath, list)
 	return group.returnObj()
 }
 
 func (group *RouterGroup) Group(relativePath string) *RouterGroup {
-	return &RouterGroup{basePath: relativePath, Router: group.Router}
+	return &RouterGroup{basePath: relativePath, Router: group.Router, mp: sync.Map{}}
 }
 func (group *RouterGroup) handle(httpMethod, relativePath string, handlers ...fasthttp.RequestHandler) {
 	absolutePath := group.calculateAbsolutePath(relativePath)
@@ -51,10 +57,12 @@ func (group *RouterGroup) handle(httpMethod, relativePath string, handlers ...fa
 }
 
 func (group *RouterGroup) combineHandlers(handlers []fasthttp.RequestHandler) []fasthttp.RequestHandler {
-	finalSize := len(group.Handlers) + len(handlers)
+	res, _ := group.mp.Load(group.basePath)
+	list := res.([]fasthttp.RequestHandler)
+	finalSize := len(list) + len(handlers)
 	mergedHandlers := make([]fasthttp.RequestHandler, finalSize)
-	copy(mergedHandlers, group.Handlers)
-	copy(mergedHandlers[len(group.Handlers):], handlers)
+	copy(mergedHandlers, list)
+	copy(mergedHandlers[len(list):], handlers)
 	return mergedHandlers
 }
 
