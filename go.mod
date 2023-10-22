@@ -1,4 +1,4 @@
-module fasthttprouter
+module github.com/a87835546/fasthttprouter
 
 go 1.21.0
 
