@@ -27,6 +27,8 @@ func (group *RouterGroup) Use(middleware ...fasthttp.RequestHandler) IRoutes {
 		list := res.([]fasthttp.RequestHandler)
 		res = append(list, middleware...)
 		group.mp.Store(group.basePath, list)
+	} else {
+		group.mp.Store(group.basePath, middleware)
 	}
 	return group.returnObj()
 }
