@@ -198,7 +198,7 @@ func (r *Router) Handle(method, path string, handle ...fasthttp.RequestHandler) 
 	if path[0] != '/' {
 		panic("path must begin with '/' in path '" + path + "'")
 	}
-
+	index = 0
 	if r.trees == nil {
 		r.trees = make(map[string]*node)
 	}
@@ -302,7 +302,11 @@ func (r *Router) Handler(ctx *fasthttp.RequestCtx) {
 		if f, tsr := root.getValue(path, ctx); f != nil {
 			//f(ctx)
 			for _, handler := range f {
-				handler(ctx)
+				if index == 999 {
+					return
+				} else {
+					handler(ctx)
+				}
 			}
 			return
 		} else if method != "CONNECT" && path != "/" {
@@ -382,4 +386,12 @@ func (r *Router) Handler(ctx *fasthttp.RequestCtx) {
 		ctx.Error(fasthttp.StatusMessage(fasthttp.StatusNotFound),
 			fasthttp.StatusNotFound)
 	}
+}
+
+type RequestCtx fasthttp.RequestCtx
+
+var index uint = 0
+
+func (c *RequestCtx) Abort() {
+	index = 999
 }
