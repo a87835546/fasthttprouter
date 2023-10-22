@@ -1,6 +1,6 @@
 module github.com/a87835546/fasthttprouter
 
-go 1.21.0
+go 1.18
 
 require (
 	github.com/buaazp/fasthttprouter v0.1.1
