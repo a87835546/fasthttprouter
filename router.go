@@ -295,7 +295,7 @@ func (r *Router) Handler(ctx *fasthttp.RequestCtx) {
 	if r.PanicHandler != nil {
 		defer r.recv(ctx)
 	}
-
+	index = 0
 	path := string(ctx.URI().PathOriginal())
 	method := string(ctx.Method())
 	if root := r.trees[method]; root != nil {
