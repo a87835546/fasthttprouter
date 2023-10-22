@@ -9,8 +9,8 @@ import (
 )
 
 type RouterGroup struct {
-	Router *Router
-	//Handlers []fasthttp.RequestHandler
+	Router   *Router
+	Handlers []fasthttp.RequestHandler
 	basePath string
 	mp       sync.Map
 }
@@ -62,6 +62,7 @@ func (group *RouterGroup) combineHandlers(handlers []fasthttp.RequestHandler) []
 	if res, ok := group.mp.Load(group.basePath); ok {
 		list = res.([]fasthttp.RequestHandler)
 	}
+	group.Handlers = list
 	finalSize := len(list) + len(handlers)
 	mergedHandlers := make([]fasthttp.RequestHandler, finalSize)
 	copy(mergedHandlers, list)
