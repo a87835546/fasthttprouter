@@ -23,10 +23,11 @@ type RouterGroup struct {
 //	}
 func (group *RouterGroup) Use(middleware ...fasthttp.RequestHandler) IRoutes {
 	//group.Handlers = append(group.Handlers, middleware...)
-	res, _ := group.mp.Load(group.basePath)
-	list := res.([]fasthttp.RequestHandler)
-	res = append(list, middleware...)
-	group.mp.Store(group.basePath, list)
+	if res, ok := group.mp.Load(group.basePath); ok {
+		list := res.([]fasthttp.RequestHandler)
+		res = append(list, middleware...)
+		group.mp.Store(group.basePath, list)
+	}
 	return group.returnObj()
 }
 
@@ -57,8 +58,10 @@ func (group *RouterGroup) handle(httpMethod, relativePath string, handlers ...fa
 }
 
 func (group *RouterGroup) combineHandlers(handlers []fasthttp.RequestHandler) []fasthttp.RequestHandler {
-	res, _ := group.mp.Load(group.basePath)
-	list := res.([]fasthttp.RequestHandler)
+	list := make([]fasthttp.RequestHandler, 0)
+	if res, ok := group.mp.Load(group.basePath); ok {
+		list = res.([]fasthttp.RequestHandler)
+	}
 	finalSize := len(list) + len(handlers)
 	mergedHandlers := make([]fasthttp.RequestHandler, finalSize)
 	copy(mergedHandlers, list)
